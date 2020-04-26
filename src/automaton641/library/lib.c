@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <locale.h>
-
+#include <time.h>
 
 void exit_error(char *description) {
     printf("Error: %s\n", description);
@@ -14,7 +14,6 @@ void gl_error(char *error) {
      switch (glGetError())  {
          case GL_NO_ERROR:
          return;
-
          case GL_INVALID_ENUM:
          printf("%s\n", error);
          exit_error("GL_INVALID_ENUM");
@@ -54,6 +53,7 @@ void error_callback(int error, const char* description)
 lib_application_t* lib_application_create() {
     lib_application_t *application = malloc(sizeof(lib_application_t));
     setlocale(LC_ALL, "");
+    srand(time(NULL));   // Initialization, should only be called once.
     return application;
 }
 
@@ -62,13 +62,61 @@ void lib_array_destroy(lib_array_t *array) {
     free(array);
 }
 
+void set_pixel_color(lib_window_t *window, size_t x, size_t y) {
+    unsigned char *pixels = window->pixels;
+    int width = window->width;
+    int height = window->height;
+    lib_color_t *color = window->color;
+    pixels[(height- 1 - y) * width * 4 + x * 4] = color->red;
+    pixels[(height- 1 - y) * width * 4 + x * 4 + 1] = color->green;
+    pixels[(height- 1 - y) * width * 4 + x * 4 + 2] = color->blue;
+    pixels[(height- 1 - y) * width * 4 + x * 4 + 3] = color->alpha;
+}
+
+void set_random_pixel_color(lib_window_t *window, size_t x, size_t y) {
+    unsigned char *pixels = window->pixels;
+    int width = window->width;
+    int height = window->height;
+    pixels[(height- 1 - y) * width * 4 + x * 4] = (unsigned char)rand();
+    pixels[(height- 1 - y) * width * 4 + x * 4 + 1] = (unsigned char)rand();
+    pixels[(height- 1 - y) * width * 4 + x * 4 + 2] = (unsigned char)rand();
+    pixels[(height- 1 - y) * width * 4 + x * 4 + 3] = 255;
+}
+
+
+void clear_pixels(lib_window_t *window) {
+    for (size_t y = 0; y < window->height; y++) {
+        for (size_t x = 0; x < window->width; x++) {
+            set_random_pixel_color(window, x, y);
+        }
+    }
+}
+
+void create_pixels(lib_window_t *window) {
+    window->pixels = malloc(sizeof(unsigned char) * window->width * window->height * 4);
+    clear_pixels(window);
+}
+
+void reallocate_pixels(lib_window_t *window) {
+    window->pixels = realloc(window->pixels, sizeof(unsigned char) * window->width * window->height * 4);
+    clear_pixels(window);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, window->width, window->height, 0, GL_RGBA, GL_UNSIGNED_BYTE, window->pixels);
+    gl_error("glTexImage2D");
+
+    glGenerateMipmap(GL_TEXTURE_2D);
+    gl_error("glGenerateMipmap");
+}
+
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
     lib_application_t *application = glfwGetWindowUserPointer(window);
-    application->window->width = width;
-    application->window->height = height;
+    lib_window_t *lib_window = application->window;
+    lib_window->width = width;
+    lib_window->height = height;
     glViewport(0, 0, width, height);
-    application->window->should_draw = true;
+    lib_window->should_draw = true;
+    reallocate_pixels(lib_window);
+
 }
 
 lib_window_t* lib_window_create(lib_window_attributes_t *attributes) {
@@ -101,13 +149,46 @@ lib_window_t* lib_window_create(lib_window_attributes_t *attributes) {
       fprintf(stderr, "Error: %s\n", glewGetErrorString(err));
     }
     glfwGetFramebufferSize(window->inner, &window->width, &window->height);
-    printf("%s: %i\n", "window->width", window->width);
-    printf("%s: %i\n", "window->height", window->height);
 
     glViewport(0, 0, window->width, window->height);
     glfwSwapInterval(1);
     glfwSetFramebufferSizeCallback(window->inner, framebuffer_size_callback);
+    window->mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
+    printf("%s: %i\n", "window->mode->width", window->mode->width);
+    printf("%s: %i\n", "window->mode->height", window->mode->height);
+    int left;
+	int top;
+	int right;
+	int bottom;
+    glfwGetWindowFrameSize(window->inner, &left, &top, &right, &bottom);
+    /*
+    printf("%s: %i\n", "left", left);
+    printf("%s: %i\n", "top", top);
+    printf("%s: %i\n", "right", right);
+    printf("%s: %i\n", "bottom", bottom);
+    */
+    window->frame_width = window->width + left + right;
+    window->frame_height = window->height + bottom + top;
+    //printf("%s: %i\n", "window->frame_width", window->frame_width);
+    //printf("%s: %i\n", "window->frame_height", window->frame_height);
+    int x = window->mode->width/2-window->frame_width/2;
+    int y = window->mode->height/2-window->frame_height/2;
+    //printf("%s: %i\n", "x", x);
+    //printf("%s: %i\n", "window->mode->height/2", window->mode->height/2);
+    //printf("%s: %i\n", "window->frame_height/2", window->frame_height/2);
+    //printf("%s: %i\n", "y", y);
+    glfwSetWindowPos(window->inner, x, y);
+    window->color = lib_color_create(0, 255, 0, 255);
+    create_pixels(window);
     return window;
+}
+
+lib_color_t *lib_color_create(unsigned char red, unsigned char green, unsigned char blue, unsigned char alpha) {
+    lib_color_t *color = malloc(sizeof(lib_color_t));
+    color->red = red;
+    color->green = green;
+    color->blue = blue;
+    color->alpha = alpha;
 }
 
 void lib_window_destroy(lib_window_t *window) {
@@ -183,21 +264,21 @@ GLuint compile_shader(int shader_type, char *path) {
 void setup_opengl(lib_application_t *application) {
     lib_window_t *window = application->window;
     float vertex_array[] = {
-         1.0f,  1.0f, 0.0f,  // top right
-         1.0f, -1.0f, 0.0f,  // bottom right
-        -1.0f, -1.0f, 0.0f,  // bottom left
-        -1.0f,  1.0f, 0.0f   // top left
+        // positions          // texture coords
+         1.0f,  1.0f, 0.0f,   1.0f, 1.0f,   // top right
+         1.0f, -1.0f, 0.0f,   1.0f, 0.0f,   // bottom right
+        -1.0f, -1.0f, 0.0f,   0.0f, 0.0f,   // bottom left
+        -1.0f,  1.0f, 0.0f,   0.0f, 1.0f    // top left
     };
     unsigned int indices_array[] = {  // note that we start from 0!
         0, 1, 3,  // first Triangle
         1, 2, 3   // second Triangle
     };
 
-    window->vertex_array = array_copy_allocate(vertex_array, 12, sizeof(float));
-    window->indices_array = array_copy_allocate(indices_array, 6, sizeof(unsigned int));
+    window->vertex_array = array_copy_allocate(vertex_array, sizeof(vertex_array), sizeof(float));
+    window->indices_array = array_copy_allocate(indices_array, sizeof(indices_array), sizeof(unsigned int));
     glGenBuffers(1, &window->vbo);
     gl_error("glGenBuffers");
-    printf("hello\n");
 
 
     GLuint vertex_shader = compile_shader(GL_VERTEX_SHADER, "./resources/shaders/vertex_shader");
@@ -252,11 +333,44 @@ void setup_opengl(lib_application_t *application) {
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices_array), window->indices_array, GL_STATIC_DRAW);
     gl_error("glBufferData");
 
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
     gl_error("glVertexAttribPointer");
 
     glEnableVertexAttribArray(0);
     gl_error("glEnableVertexAttribArray");
+
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+    gl_error("glVertexAttribPointer");
+
+    glEnableVertexAttribArray(1);
+    gl_error("glEnableVertexAttribArray");
+
+    glGenTextures(1, &window->texture);
+    gl_error("glGenTextures");
+
+    glActiveTexture(GL_TEXTURE0);
+    gl_error("glActiveTexture");
+
+    glBindTexture(GL_TEXTURE_2D, window->texture);
+    gl_error("glBindTexture");
+
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, window->width, window->height, 0, GL_RGBA, GL_UNSIGNED_BYTE, window->pixels);
+    gl_error("glTexImage2D");
+
+    glGenerateMipmap(GL_TEXTURE_2D);
+    gl_error("glGenerateMipmap");
+
+    GLint location = glGetUniformLocation(window->shader_program, "ourTexture");
+    gl_error("glGetUniformLocation");
+
+    glUniform1i(location, 0);
+    gl_error("glUniform1i");
+
+    glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+    gl_error("glClearColor");
+
+    printf("%s\n", glGetString(GL_RENDERER));
+    printf("%s\n", glGetString(GL_VERSION));
 
 }
 
@@ -276,10 +390,6 @@ void lib_application_destroy(lib_application_t *application) {
 int lib_application_run(lib_application_t *application) {
     lib_window_t *window = application->window;
     GLFWwindow *inner = window->inner;
-    glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-    gl_error("glClearColor");
-    printf("%s\n", glGetString(GL_RENDERER));
-    printf("%s\n", glGetString(GL_VERSION));
     glfwShowWindow(inner);
     while (!glfwWindowShouldClose(inner))
     {

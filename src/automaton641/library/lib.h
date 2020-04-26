@@ -10,18 +10,30 @@ typedef struct lib_array {
     size_t element_size;
 } lib_array_t;
 
+typedef struct lib_color {
+    unsigned char red;
+    unsigned char green;
+    unsigned char blue;
+    unsigned char alpha;
+} lib_color_t;
+
 typedef struct lib_window_t {
     float *vertex_array;
     GLuint vbo;
     GLuint vao;
     GLuint ebo;
-
+    GLuint texture;
+    const GLFWvidmode* mode;
     GLFWwindow *inner;
     int width;
     int height;
+    int frame_width;
+    int frame_height;
     bool should_draw;
+    lib_color_t *color;
     GLuint shader_program;
     unsigned int *indices_array;
+    unsigned char *pixels;
 } lib_window_t;
 
 typedef struct lib_application{
@@ -34,6 +46,8 @@ typedef struct lib_window_attributes {
     int height;
     bool resizable;
 } lib_window_attributes_t;
+
+lib_color_t *lib_color_create(unsigned char red, unsigned char green, unsigned char blue, unsigned char alpha);
 
 lib_array_t *lib_array_create(size_t element_size);
 void lib_array_add(lib_array_t *array, void *element);
