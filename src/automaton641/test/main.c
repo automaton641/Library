@@ -7,7 +7,7 @@ int main(int argc, char const *argv[]) {
     attributes.title = "Hello world";
     attributes.width = 1024;
     attributes.height = 512;
-    attributes.resizable = false;
+    attributes.resizable = true;
     lib_application_add_window(application, &attributes);
     int status = lib_application_run(application);
     lib_application_destroy(application);

@@ -11,10 +11,17 @@ typedef struct lib_array {
 } lib_array_t;
 
 typedef struct lib_window_t {
+    float *vertex_array;
+    GLuint vbo;
+    GLuint vao;
+    GLuint ebo;
+
     GLFWwindow *inner;
     int width;
     int height;
     bool should_draw;
+    GLuint shader_program;
+    unsigned int *indices_array;
 } lib_window_t;
 
 typedef struct lib_application{
