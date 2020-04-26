@@ -8,7 +8,7 @@ clean:
 	rm -r bin/*
 
 bin/test: bin/main.o bin/lib.o
-	gcc -g -Isrc bin/main.o bin/lib.o -o bin/test `pkg-config --libs glew glfw3`
+	gcc -g -Isrc bin/main.o bin/lib.o -o bin/test `pkg-config --libs glew glfw3` -pthread
 
 bin/main.o: src/automaton641/test/main.c
 	gcc -g -Isrc src/automaton641/test/main.c -c -o bin/main.o

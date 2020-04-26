@@ -4,10 +4,134 @@
 #include <string.h>
 #include <locale.h>
 #include <time.h>
+#include <unistd.h>
+#include <errno.h>
+
+int msleep(long msec)
+{
+    struct timespec ts;
+    int res;
+    if (msec < 0) {
+        errno = EINVAL;
+        return -1;
+    }
+    ts.tv_sec = msec / 1000;
+    ts.tv_nsec = (msec % 1000) * 1000000;
+    res = nanosleep(&ts, NULL);
+    return res;
+}
+
+lib_widget_t *lib_widget_create(void *specialization, lib_widget_initialization initialization, lib_widget_draw draw) {
+    lib_widget_t *widget = malloc(sizeof(lib_widget_t));
+    widget->specialization = specialization;
+    widget->draw = draw;
+    widget->initialization = initialization;
+    return widget;
+}
+
+void lib_automaton_display_initialization (lib_widget_t *widget, lib_application_t *application) {
+    lib_automaton_display_t *display = widget->specialization;
+    lib_automaton_start(display->automaton);
+}
+
+void draw_quad(lib_window_t *window) {
+
+}
+
+void lib_automaton_display_draw (lib_widget_t *widget, lib_application_t *application) {
+    lib_automaton_display_t *display = widget->specialization;
+    lib_automaton_t *automaton = display->automaton;
+    lib_window_t *window = application->window;
+    for (size_t y = 0; y < automaton->bidimensional->height; y++) {
+        for (size_t x = 0; x < automaton->bidimensional->width; x++) {
+            draw_quad(window);
+        }
+    }
+}
+
+
+lib_automaton_display_t *lib_automaton_display_create(lib_automaton_attributes_t *automaton_attributes) {
+    lib_automaton_display_t *display = malloc(sizeof(lib_automaton_display_t));
+    display->widget = lib_widget_create(display, lib_automaton_display_initialization, lib_automaton_display_draw);
+    display->automaton = lib_automaton_create(automaton_attributes);
+    return display;
+}
+
+void *lib_automaton_thread(void *argument)
+{
+    lib_automaton_t *automaton = argument;
+    printf("%s\n", "Hello thread");
+    struct timespec time;
+    while (automaton->iterate) {
+        msleep(automaton->iteration_time);
+        (*automaton->iteration) (automaton); // callback to A
+
+    }
+    return NULL;
+}
+
+
+
+void lib_automaton_start(lib_automaton_t *automaton) {
+    int status = pthread_create(&automaton->thread_id, NULL, lib_automaton_thread, (void *)automaton);
+    if (status) {
+        exit_error("pthread_create");
+    }
+}
+
+
+lib_automaton_t *lib_automaton_create(lib_automaton_attributes_t *attributes) {
+    lib_automaton_t *automaton = malloc(sizeof(lib_automaton_t));
+    automaton->iteration_time = attributes->iteration_time;
+    automaton->iteration = attributes->iteration;
+    automaton->bidimensional = lib_bidimensional_create(attributes->element_size, attributes->width, attributes->height);
+    return automaton;
+}
+
+void lib_automaton_destroy(lib_automaton_t *automaton) {
+    lib_bidimensional_destroy(automaton->bidimensional);
+    free(automaton);
+}
 
 void exit_error(char *description) {
     printf("Error: %s\n", description);
     exit(EXIT_FAILURE);
+}
+
+lib_bidimensional_t *lib_bidimensional_create(size_t element_size, size_t width, size_t height) {
+    lib_bidimensional_t *bidimensional = malloc(sizeof(lib_bidimensional_t));
+    bidimensional->data = malloc(element_size*width*height);
+    bidimensional->element_size = element_size;
+    bidimensional->width = width;
+    bidimensional->height = height;
+}
+
+void lib_bidimensional_destroy(lib_bidimensional_t *bidimensional) {
+    free(bidimensional->data);
+    free(bidimensional);
+}
+
+size_t lib_bidimensional_index(lib_bidimensional_t *bidimensional, size_t x, size_t y) {
+    return y*bidimensional->width+x;
+}
+
+
+void lib_array_set(lib_bidimensional_t *bidimensional, void *element, size_t x, size_t y) {
+    memcpy(lib_bidimensional_get(bidimensional, x, y), element, bidimensional->element_size);
+}
+
+void *lib_bidimensional_get(lib_bidimensional_t *bidimensional, size_t x, size_t y) {
+    size_t index = lib_bidimensional_index(bidimensional, x, y);
+    return bidimensional->data+index*bidimensional->element_size;
+}
+
+void lib_array_add(lib_array_t *array, void *element) {
+    if (array->size == array->capacity) {
+        array->capacity *= 2;
+        array->data = realloc(array->data, array->capacity*array->element_size);
+    }
+    memcpy(array->data+array->size*array->element_size, element, array->element_size);
+    array->size++;
 }
 
 void gl_error(char *error) {
@@ -180,6 +304,7 @@ lib_window_t* lib_window_create(lib_window_attributes_t *attributes) {
     glfwSetWindowPos(window->inner, x, y);
     window->color = lib_color_create(0, 255, 0, 255);
     create_pixels(window);
+    window->widget = NULL;
     return window;
 }
 
@@ -390,12 +515,17 @@ void lib_application_destroy(lib_application_t *application) {
 int lib_application_run(lib_application_t *application) {
     lib_window_t *window = application->window;
     GLFWwindow *inner = window->inner;
+    lib_widget_t *widget = window->widget;
     glfwShowWindow(inner);
+    if (widget != NULL) {
+        (*widget->initialization) (widget, application);
+    }
     while (!glfwWindowShouldClose(inner))
     {
         if (window->should_draw) {
-            glClear(GL_COLOR_BUFFER_BIT);
-            gl_error("glClear");
+            if (widget != NULL) {
+                (*widget->draw) (widget, application);
+            }
             glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
             gl_error("glDrawElements");
             glfwSwapBuffers(inner);
@@ -413,13 +543,4 @@ lib_array_t *lib_array_create(size_t element_size) {
     array->size = 0;
     array->data = malloc(array->capacity*element_size);
     return array;
-}
-
-void lib_array_add(lib_array_t *array, void *element) {
-    if (array->size == array->capacity) {
-        array->capacity *= 2;
-        array->data = realloc(array->data, array->capacity*array->element_size);
-    }
-    memcpy(array->data+array->size*array->element_size, element, array->element_size);
-    array->size++;
 }
