@@ -23,6 +23,14 @@ void lib_array_destroy(lib_array_t *array) {
     free(array);
 }
 
+void framebuffer_size_callback(GLFWwindow* window, int width, int height)
+{
+    lib_application_t *application = glfwGetWindowUserPointer(window);
+    application->window->width = width;
+    application->window->height = height;
+    glViewport(0, 0, width, height);
+}
+
 lib_window_t* lib_window_create(lib_window_attributes_t *attributes) {
     if (!glfwInit())
     {
@@ -49,6 +57,7 @@ lib_window_t* lib_window_create(lib_window_attributes_t *attributes) {
     glfwGetFramebufferSize(window->inner, &window->width, &window->height);
     glViewport(0, 0, window->width, window->height);
     glfwSwapInterval(1);
+    glfwSetFramebufferSizeCallback(window->inner, framebuffer_size_callback);
     return window;
 }
 
@@ -59,6 +68,7 @@ void lib_window_destroy(lib_window_t *window) {
 
 lib_window_t *lib_application_add_window(lib_application_t *application, lib_window_attributes_t *attributes) {
     application->window = lib_window_create(attributes);
+    glfwSetWindowUserPointer(application->window->inner, application);
     return application->window;
 }
 
