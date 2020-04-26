@@ -10,17 +10,16 @@ typedef struct lib_array {
     size_t element_size;
 } lib_array_t;
 
-typedef struct lib_application{
-    lib_window_t *window;
-} lib_application_t;
-
 typedef struct lib_window_t {
     GLFWwindow *inner;
     int width;
     int height;
+    bool should_draw;
 } lib_window_t;
 
-
+typedef struct lib_application{
+    lib_window_t *window;
+} lib_application_t;
 
 typedef struct lib_window_attributes {
     char *title;

@@ -1,5 +1,6 @@
 #include <automaton641/library/lib.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
 
 void error_callback(int error, const char* description)
@@ -14,9 +15,6 @@ void exit_error(char *description) {
 
 lib_application_t* lib_application_create() {
     lib_application_t *application = malloc(sizeof(lib_application_t));
-    application->windows = lib_array_create(sizeof(lib_window_t));
-
-
     return application;
 }
 
@@ -42,10 +40,11 @@ lib_window_t* lib_window_create(lib_window_attributes_t *attributes) {
     }
     lib_window_t *window = malloc(sizeof(lib_window_t));
     window->inner = glfwCreateWindow(attributes->width, attributes->height, attributes->title, NULL, NULL);
-    if (!window)
+    if (!window->inner)
     {
         exit_error("glfwCreateWindow");
     }
+    window->should_draw = true;
     glfwMakeContextCurrent(window->inner);
     glfwGetFramebufferSize(window->inner, &window->width, &window->height);
     glViewport(0, 0, window->width, window->height);
@@ -70,11 +69,17 @@ void lib_application_destroy(lib_application_t *application) {
 }
 
 int lib_application_run(lib_application_t *application) {
+    glfwShowWindow(application->window->inner);
     while (!glfwWindowShouldClose(application->window->inner))
     {
-        // Keep running
-    }
+        if (application->window->should_draw) {
 
+            glfwSwapBuffers(application->window->inner);
+            application->window->should_draw = false;
+        }
+        glfwPollEvents();
+    }
+    return EXIT_SUCCESS;
 }
 
 lib_array_t *lib_array_create(size_t element_size) {
@@ -89,7 +94,7 @@ lib_array_t *lib_array_create(size_t element_size) {
 void lib_array_add(lib_array_t *array, void *element) {
     if (array->size == array->capacity) {
         array->capacity *= 2;
-        array->data = realloc(array->data, array->capacity*element_size);
+        array->data = realloc(array->data, array->capacity*array->element_size);
     }
     memcpy(array->data+array->size*array->element_size, element, array->element_size);
     array->size++;
