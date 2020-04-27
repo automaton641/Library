@@ -1,17 +1,35 @@
-main: bin/test
-	./bin/test
+lib_sources = $(wildcard src/automaton641/library/*.c)
+lib_headers = $(wildcard src/automaton641/library/*.h)
 
-debug: bin/test
-	gdb bin/test
+test_sources =  $(wildcard src/automaton641/test/*.c) $(lib_sources)
+test_headers = $(wildcard src/automaton641/test/*.h) $(lib_headers)
+test_dependencies = $(test_sources) $(test_headers)
+test_executable = bin/test
+
+gui_sources =  $(wildcard src/automaton641/gui/*.c) $(lib_sources)
+gui_headers = $(wildcard src/automaton641/gui/*.h) $(lib_headers)
+gui_dependencies = $(gui_sources) $(gui_headers)
+gui_executable = bin/gui
+
+linker_flags = `pkg-config --libs glew glfw3` -pthread
+includes = -Isrc
+
+main: execute_gui
+
+execute_gui: $(gui_executable)
+	./$(gui_executable)
+
+execute_test: $(test_executable)
+	./$(test_executable)
+
+debug_test: $(test_executable)
+	gdb $(test_executable)
 
 clean:
 	rm -r bin/*
 
-bin/test: bin/main.o bin/lib.o
-	gcc -g -Isrc bin/main.o bin/lib.o -o bin/test `pkg-config --libs glew glfw3` -pthread
+$(test_executable): $(test_dependencies)
+	gcc $(includes) $(test_sources) -o $(test_executable) $(linker_flags)
 
-bin/main.o: src/automaton641/test/main.c
-	gcc -g -Isrc src/automaton641/test/main.c -c -o bin/main.o
-
-bin/lib.o: src/automaton641/library/lib.c src/automaton641/library/lib.h
-	gcc -g -Isrc src/automaton641/library/lib.c -c -o bin/lib.o
+$(gui_executable): $(gui_dependencies)
+	gcc $(includes) $(gui_sources) -o $(gui_executable) $(linker_flags)

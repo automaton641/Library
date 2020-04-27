@@ -139,7 +139,7 @@ void test_update_color (lib_color_t *color, lib_automaton_t *automaton, size_t x
 int main(int argc, char const *argv[]) {
     lib_application_t *application = lib_application_create();
     test_automaton_data_t automaton_data = {
-        .modulus = 360
+        .modulus = 4
     };
     lib_automaton_attributes_t automaton_attributes = {
         .element_size = sizeof(test_cell_t),
@@ -154,7 +154,7 @@ int main(int argc, char const *argv[]) {
     display->cell_size = 7;
     display->update_color = test_update_color;
     lib_window_attributes_t window_attributes = {
-        .title = "Hello world",
+        .title = "Test",
         .width = automaton_attributes.width*display->cell_size,
         .height = automaton_attributes.height*display->cell_size,
         .resizable = false

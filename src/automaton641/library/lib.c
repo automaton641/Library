@@ -1,11 +1,5 @@
 #include <automaton641/library/lib.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <locale.h>
-#include <time.h>
-#include <unistd.h>
-#include <errno.h>
+
 
 int msleep(long msec)
 {
@@ -36,24 +30,7 @@ void lib_automaton_display_initialization (lib_widget_t *widget, lib_application
     lib_automaton_start(automaton, application->window);
 }
 
-void set_pixel_color(lib_window_t *window, size_t x, size_t y) {
-    unsigned char *pixels = window->pixels;
-    int width = window->width;
-    int height = window->height;
-    lib_color_t *color = window->color;
-    pixels[(height- 1 - y) * width * 4 + x * 4] = color->red;
-    pixels[(height- 1 - y) * width * 4 + x * 4 + 1] = color->green;
-    pixels[(height- 1 - y) * width * 4 + x * 4 + 2] = color->blue;
-    pixels[(height- 1 - y) * width * 4 + x * 4 + 3] = color->alpha;
-}
 
-void draw_quad(lib_window_t *window, size_t x, size_t y, size_t size) {
-    for (size_t py = y; py < y+size; py++) {
-        for (size_t px = x; px < x+size; px++) {
-            set_pixel_color(window, px, py);
-        }
-    }
-}
 
 void lib_automaton_display_draw (lib_widget_t *widget, lib_application_t *application) {
     lib_automaton_display_t *display = widget->specialization;
@@ -64,62 +41,15 @@ void lib_automaton_display_draw (lib_widget_t *widget, lib_application_t *applic
     for (size_t y = 0; y < automaton->bidimensional->height; y++) {
         for (size_t x = 0; x < automaton->bidimensional->width; x++) {
             (*display->update_color) (color, automaton, x, y);
-            draw_quad(window, x * cell_size, y * cell_size, cell_size);
+            lib_window_draw_quad(window, x * cell_size, y * cell_size, cell_size);
         }
     }
 }
 
 
-lib_automaton_display_t *lib_automaton_display_create(lib_automaton_attributes_t *automaton_attributes) {
-    lib_automaton_display_t *display = malloc(sizeof(lib_automaton_display_t));
-    display->widget = lib_widget_create(display, lib_automaton_display_initialization, lib_automaton_display_draw);
-    display->automaton = lib_automaton_create(automaton_attributes);
-    return display;
-}
-
-void *lib_automaton_thread(void *argument)
-{
-    lib_window_automaton_pack_t *pack = argument;
-    lib_automaton_t *automaton = pack->automaton;
-    lib_window_t *window = pack->window;
-    printf("%s\n", "Hello thread");
-    struct timespec time;
-    while (automaton->iterate) {
-        //printf("%s\n", "iteration thread");
-        msleep(automaton->iteration_time);
-        (*automaton->iteration) (automaton); // callback to A
-        window->should_draw = true;
-    }
-    printf("%s\n", "Goodbye thread");
-    return NULL;
-}
-
-void lib_automaton_start(lib_automaton_t *automaton, lib_window_t *window) {
-    lib_window_automaton_pack_t *pack = malloc(sizeof(lib_window_automaton_pack_t));
-    pack->window = window;
-    pack->automaton = automaton;
-    int status = pthread_create(&automaton->thread_id, NULL, lib_automaton_thread, (void *)pack);
-    if (status) {
-        exit_error("pthread_create");
-    }
-}
 
 
-lib_automaton_t *lib_automaton_create(lib_automaton_attributes_t *attributes) {
-    lib_automaton_t *automaton = malloc(sizeof(lib_automaton_t));
-    automaton->iteration_time = attributes->iteration_time;
-    automaton->iteration = attributes->iteration;
-    automaton->initialization = attributes->initialization;
-    automaton->user_data = attributes->user_data;
-    automaton->iterate = true;
-    automaton->bidimensional = lib_bidimensional_create(attributes->element_size, attributes->width, attributes->height);
-    return automaton;
-}
 
-void lib_automaton_destroy(lib_automaton_t *automaton) {
-    lib_bidimensional_destroy(automaton->bidimensional);
-    free(automaton);
-}
 
 void exit_error(char *description) {
     printf("Error: %s\n", description);
@@ -199,10 +129,7 @@ void gl_error(char *error) {
 
 }
 
-void error_callback(int error, const char* description)
-{
-    fprintf(stderr, "Error: %s\n", description);
-}
+
 
 lib_application_t* lib_application_create() {
     lib_application_t *application = malloc(sizeof(lib_application_t));
@@ -214,137 +141,6 @@ lib_application_t* lib_application_create() {
 void lib_array_destroy(lib_array_t *array) {
     free(array->data);
     free(array);
-}
-
-void set_random_pixel_color(lib_window_t *window, size_t x, size_t y) {
-    unsigned char *pixels = window->pixels;
-    int width = window->width;
-    int height = window->height;
-    pixels[(height- 1 - y) * width * 4 + x * 4] = (unsigned char)rand();
-    pixels[(height- 1 - y) * width * 4 + x * 4 + 1] = (unsigned char)rand();
-    pixels[(height- 1 - y) * width * 4 + x * 4 + 2] = (unsigned char)rand();
-    pixels[(height- 1 - y) * width * 4 + x * 4 + 3] = 255;
-}
-
-
-void clear_pixels(lib_window_t *window) {
-    for (size_t y = 0; y < window->height; y++) {
-        for (size_t x = 0; x < window->width; x++) {
-            set_random_pixel_color(window, x, y);
-        }
-    }
-}
-
-void create_pixels(lib_window_t *window) {
-    window->pixels = malloc(sizeof(unsigned char) * window->width * window->height * 4);
-    clear_pixels(window);
-}
-
-void reallocate_pixels(lib_window_t *window) {
-    window->pixels = realloc(window->pixels, sizeof(unsigned char) * window->width * window->height * 4);
-    clear_pixels(window);
-}
-
-void framebuffer_size_callback(GLFWwindow* window, int width, int height)
-{
-    lib_application_t *application = glfwGetWindowUserPointer(window);
-    lib_window_t *lib_window = application->window;
-    lib_window->width = width;
-    lib_window->height = height;
-    glViewport(0, 0, width, height);
-    lib_window->should_draw = true;
-    reallocate_pixels(lib_window);
-
-}
-
-lib_window_t* lib_window_create(lib_window_attributes_t *attributes) {
-    if (!glfwInit())
-    {
-        exit_error("glfwInit");
-    }
-    glfwSetErrorCallback(error_callback);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
-    if (attributes->resizable) {
-        glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
-    } else {
-        glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
-    }
-    lib_window_t *window = malloc(sizeof(lib_window_t));
-    window->inner = glfwCreateWindow(attributes->width, attributes->height, attributes->title, NULL, NULL);
-    if (!window->inner)
-    {
-        exit_error("glfwCreateWindow");
-    }
-
-    window->should_draw = true;
-    glfwMakeContextCurrent(window->inner);
-    GLenum err = glewInit();
-    if (GLEW_OK != err)
-    {
-      fprintf(stderr, "Error: %s\n", glewGetErrorString(err));
-    }
-    glfwGetFramebufferSize(window->inner, &window->width, &window->height);
-
-    glViewport(0, 0, window->width, window->height);
-    glfwSwapInterval(1);
-    glfwSetFramebufferSizeCallback(window->inner, framebuffer_size_callback);
-    window->mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
-    printf("%s: %i\n", "window->mode->width", window->mode->width);
-    printf("%s: %i\n", "window->mode->height", window->mode->height);
-    int left;
-	int top;
-	int right;
-	int bottom;
-    glfwGetWindowFrameSize(window->inner, &left, &top, &right, &bottom);
-    /*
-    printf("%s: %i\n", "left", left);
-    printf("%s: %i\n", "top", top);
-    printf("%s: %i\n", "right", right);
-    printf("%s: %i\n", "bottom", bottom);
-    */
-    window->frame_width = window->width + left + right;
-    window->frame_height = window->height + bottom + top;
-    //printf("%s: %i\n", "window->frame_width", window->frame_width);
-    //printf("%s: %i\n", "window->frame_height", window->frame_height);
-    int x = window->mode->width/2-window->frame_width/2;
-    int y = window->mode->height/2-window->frame_height/2;
-    //printf("%s: %i\n", "x", x);
-    //printf("%s: %i\n", "window->mode->height/2", window->mode->height/2);
-    //printf("%s: %i\n", "window->frame_height/2", window->frame_height/2);
-    //printf("%s: %i\n", "y", y);
-    glfwSetWindowPos(window->inner, x, y);
-    window->color = lib_color_create(0, 255, 0, 255);
-    create_pixels(window);
-    window->widget = NULL;
-    return window;
-}
-
-void lib_color_update(lib_color_t *color, unsigned char red, unsigned char green, unsigned char blue, unsigned char alpha) {
-    color->red = red;
-    color->green = green;
-    color->blue = blue;
-    color->alpha = alpha;
-}
-
-lib_color_t *lib_color_create(unsigned char red, unsigned char green, unsigned char blue, unsigned char alpha) {
-    lib_color_t *color = malloc(sizeof(lib_color_t));
-    color->red = red;
-    color->green = green;
-    color->blue = blue;
-    color->alpha = alpha;
-}
-
-void lib_window_destroy(lib_window_t *window) {
-    glfwDestroyWindow(window->inner);
-    free(window->vertex_array);
-    free(window->indices_array);
-    glDeleteVertexArrays(1, &window->vao);
-    glDeleteBuffers(1, &window->vbo);
-    glDeleteBuffers(1, &window->ebo);
-    free(window);
 }
 
 
