@@ -31,20 +31,40 @@ lib_widget_t *lib_widget_create(void *specialization, lib_widget_initialization 
 
 void lib_automaton_display_initialization (lib_widget_t *widget, lib_application_t *application) {
     lib_automaton_display_t *display = widget->specialization;
-    lib_automaton_start(display->automaton);
+    lib_automaton_t *automaton = display->automaton;
+    (*automaton->initialization) (automaton);
+    lib_automaton_start(automaton, application->window);
 }
 
-void draw_quad(lib_window_t *window) {
+void set_pixel_color(lib_window_t *window, size_t x, size_t y) {
+    unsigned char *pixels = window->pixels;
+    int width = window->width;
+    int height = window->height;
+    lib_color_t *color = window->color;
+    pixels[(height- 1 - y) * width * 4 + x * 4] = color->red;
+    pixels[(height- 1 - y) * width * 4 + x * 4 + 1] = color->green;
+    pixels[(height- 1 - y) * width * 4 + x * 4 + 2] = color->blue;
+    pixels[(height- 1 - y) * width * 4 + x * 4 + 3] = color->alpha;
+}
 
+void draw_quad(lib_window_t *window, size_t x, size_t y, size_t size) {
+    for (size_t py = y; py < y+size; py++) {
+        for (size_t px = x; px < x+size; px++) {
+            set_pixel_color(window, px, py);
+        }
+    }
 }
 
 void lib_automaton_display_draw (lib_widget_t *widget, lib_application_t *application) {
     lib_automaton_display_t *display = widget->specialization;
     lib_automaton_t *automaton = display->automaton;
     lib_window_t *window = application->window;
+    lib_color_t *color = window->color;
+    int cell_size = display->cell_size;
     for (size_t y = 0; y < automaton->bidimensional->height; y++) {
         for (size_t x = 0; x < automaton->bidimensional->width; x++) {
-            draw_quad(window);
+            (*display->update_color) (color, automaton, x, y);
+            draw_quad(window, x * cell_size, y * cell_size, cell_size);
         }
     }
 }
@@ -59,21 +79,26 @@ lib_automaton_display_t *lib_automaton_display_create(lib_automaton_attributes_t
 
 void *lib_automaton_thread(void *argument)
 {
-    lib_automaton_t *automaton = argument;
+    lib_window_automaton_pack_t *pack = argument;
+    lib_automaton_t *automaton = pack->automaton;
+    lib_window_t *window = pack->window;
     printf("%s\n", "Hello thread");
     struct timespec time;
     while (automaton->iterate) {
+        //printf("%s\n", "iteration thread");
         msleep(automaton->iteration_time);
         (*automaton->iteration) (automaton); // callback to A
-
+        window->should_draw = true;
     }
+    printf("%s\n", "Goodbye thread");
     return NULL;
 }
 
-
-
-void lib_automaton_start(lib_automaton_t *automaton) {
-    int status = pthread_create(&automaton->thread_id, NULL, lib_automaton_thread, (void *)automaton);
+void lib_automaton_start(lib_automaton_t *automaton, lib_window_t *window) {
+    lib_window_automaton_pack_t *pack = malloc(sizeof(lib_window_automaton_pack_t));
+    pack->window = window;
+    pack->automaton = automaton;
+    int status = pthread_create(&automaton->thread_id, NULL, lib_automaton_thread, (void *)pack);
     if (status) {
         exit_error("pthread_create");
     }
@@ -84,6 +109,9 @@ lib_automaton_t *lib_automaton_create(lib_automaton_attributes_t *attributes) {
     lib_automaton_t *automaton = malloc(sizeof(lib_automaton_t));
     automaton->iteration_time = attributes->iteration_time;
     automaton->iteration = attributes->iteration;
+    automaton->initialization = attributes->initialization;
+    automaton->user_data = attributes->user_data;
+    automaton->iterate = true;
     automaton->bidimensional = lib_bidimensional_create(attributes->element_size, attributes->width, attributes->height);
     return automaton;
 }
@@ -116,14 +144,16 @@ size_t lib_bidimensional_index(lib_bidimensional_t *bidimensional, size_t x, siz
 }
 
 
-void lib_array_set(lib_bidimensional_t *bidimensional, void *element, size_t x, size_t y) {
+void *lib_bidimensional_get(lib_bidimensional_t *bidimensional, size_t x, size_t y) {
+    size_t index = lib_bidimensional_index(bidimensional, x, y);
+    return (void*)(bidimensional->data+index*bidimensional->element_size);
+}
+
+void lib_bidimensional_set(lib_bidimensional_t *bidimensional, void *element, size_t x, size_t y) {
     memcpy(lib_bidimensional_get(bidimensional, x, y), element, bidimensional->element_size);
 }
 
-void *lib_bidimensional_get(lib_bidimensional_t *bidimensional, size_t x, size_t y) {
-    size_t index = lib_bidimensional_index(bidimensional, x, y);
-    return bidimensional->data+index*bidimensional->element_size;
-}
+
 
 void lib_array_add(lib_array_t *array, void *element) {
     if (array->size == array->capacity) {
@@ -186,17 +216,6 @@ void lib_array_destroy(lib_array_t *array) {
     free(array);
 }
 
-void set_pixel_color(lib_window_t *window, size_t x, size_t y) {
-    unsigned char *pixels = window->pixels;
-    int width = window->width;
-    int height = window->height;
-    lib_color_t *color = window->color;
-    pixels[(height- 1 - y) * width * 4 + x * 4] = color->red;
-    pixels[(height- 1 - y) * width * 4 + x * 4 + 1] = color->green;
-    pixels[(height- 1 - y) * width * 4 + x * 4 + 2] = color->blue;
-    pixels[(height- 1 - y) * width * 4 + x * 4 + 3] = color->alpha;
-}
-
 void set_random_pixel_color(lib_window_t *window, size_t x, size_t y) {
     unsigned char *pixels = window->pixels;
     int width = window->width;
@@ -224,11 +243,6 @@ void create_pixels(lib_window_t *window) {
 void reallocate_pixels(lib_window_t *window) {
     window->pixels = realloc(window->pixels, sizeof(unsigned char) * window->width * window->height * 4);
     clear_pixels(window);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, window->width, window->height, 0, GL_RGBA, GL_UNSIGNED_BYTE, window->pixels);
-    gl_error("glTexImage2D");
-
-    glGenerateMipmap(GL_TEXTURE_2D);
-    gl_error("glGenerateMipmap");
 }
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
@@ -306,6 +320,13 @@ lib_window_t* lib_window_create(lib_window_attributes_t *attributes) {
     create_pixels(window);
     window->widget = NULL;
     return window;
+}
+
+void lib_color_update(lib_color_t *color, unsigned char red, unsigned char green, unsigned char blue, unsigned char alpha) {
+    color->red = red;
+    color->green = green;
+    color->blue = blue;
+    color->alpha = alpha;
 }
 
 lib_color_t *lib_color_create(unsigned char red, unsigned char green, unsigned char blue, unsigned char alpha) {
@@ -526,6 +547,11 @@ int lib_application_run(lib_application_t *application) {
             if (widget != NULL) {
                 (*widget->draw) (widget, application);
             }
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, window->width, window->height, 0, GL_RGBA, GL_UNSIGNED_BYTE, window->pixels);
+            gl_error("glTexImage2D");
+
+            glGenerateMipmap(GL_TEXTURE_2D);
+            gl_error("glGenerateMipmap");
             glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
             gl_error("glDrawElements");
             glfwSwapBuffers(inner);

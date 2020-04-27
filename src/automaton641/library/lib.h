@@ -8,10 +8,16 @@
 struct lib_automaton;
 struct lib_widget;
 struct lib_application_t;
+struct lib_color;
+
+typedef struct lib_color lib_color_t;
 typedef struct lib_application lib_application_t;
 typedef struct lib_widget lib_widget_t;
 typedef struct lib_automaton lib_automaton_t;
+
+typedef void(* lib_automaton_initialization) (lib_automaton_t *automaton);
 typedef void(* lib_automaton_iteration) (lib_automaton_t *automaton);
+typedef void(* lib_automaton_display_update_color) (lib_color_t *color, lib_automaton_t *automaton, size_t x, size_t y);
 typedef void(* lib_widget_initialization) (lib_widget_t *widget, lib_application_t *application);
 typedef void(* lib_widget_draw) (lib_widget_t *widget, lib_application_t *application);
 
@@ -28,6 +34,8 @@ struct lib_automaton {
     bool iterate;
     int iteration_time;
     pthread_t thread_id;
+    lib_automaton_initialization initialization;
+    void *user_data;
 };
 
 
@@ -38,12 +46,12 @@ typedef struct lib_array {
     size_t element_size;
 } lib_array_t;
 
-typedef struct lib_color {
+struct lib_color {
     unsigned char red;
     unsigned char green;
     unsigned char blue;
     unsigned char alpha;
-} lib_color_t;
+};
 
 struct lib_widget {
     lib_widget_initialization initialization;
@@ -88,19 +96,28 @@ typedef struct lib_automaton_attributes {
     size_t height;
     int iteration_time;
     lib_automaton_iteration iteration;
+    lib_automaton_initialization initialization;
+    void *user_data;
 } lib_automaton_attributes_t;
 
 typedef struct lib_automaton_display {
     lib_widget_t *widget;
     lib_automaton_t *automaton;
     int cell_size;
+    lib_automaton_display_update_color update_color;
 } lib_automaton_display_t;
+
+typedef struct lib_window_automaton_pack {
+    lib_window_t *window;
+    lib_automaton_t *automaton;
+}lib_window_automaton_pack_t;
 
 lib_widget_t *lib_widget_create(void *specialization, lib_widget_initialization initialization, lib_widget_draw draw);
 
 lib_automaton_display_t *lib_automaton_display_create(lib_automaton_attributes_t *automaton_attributes);
 
 lib_color_t *lib_color_create(unsigned char red, unsigned char green, unsigned char blue, unsigned char alpha);
+void lib_color_update(lib_color_t *color, unsigned char red, unsigned char green, unsigned char blue, unsigned char alpha);
 
 lib_bidimensional_t *lib_bidimensional_create(size_t element_size, size_t width, size_t height);
 size_t lib_bidimensional_index(lib_bidimensional_t *bidimensional, size_t x, size_t y);
@@ -109,7 +126,7 @@ void *lib_bidimensional_get(lib_bidimensional_t *bidimensional, size_t x, size_t
 void lib_bidimensional_destroy(lib_bidimensional_t *bidimensional);
 
 lib_automaton_t *lib_automaton_create(lib_automaton_attributes_t *attributes);
-void lib_automaton_start(lib_automaton_t *automaton);
+void lib_automaton_start(lib_automaton_t *automaton, lib_window_t *window);
 void lib_automaton_destroy(lib_automaton_t *automaton);
 
 
