@@ -1,4 +1,5 @@
 #include <automaton641/library/lib_automaton.h>
+#include <automaton641/library/lib.h>
 
 void *lib_automaton_thread(void *argument)
 {
@@ -9,7 +10,7 @@ void *lib_automaton_thread(void *argument)
     struct timespec time;
     while (automaton->iterate) {
         //printf("%s\n", "iteration thread");
-        msleep(automaton->iteration_time);
+        lib_msleep(automaton->iteration_time);
         (*automaton->iteration) (automaton); // callback to A
         window->should_draw = true;
     }
@@ -23,7 +24,7 @@ void lib_automaton_start(lib_automaton_t *automaton, lib_window_t *window) {
     pack->automaton = automaton;
     int status = pthread_create(&automaton->thread_id, NULL, lib_automaton_thread, (void *)pack);
     if (status) {
-        exit_error("pthread_create");
+        lib_exit_error("pthread_create");
     }
 }
 

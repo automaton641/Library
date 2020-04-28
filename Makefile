@@ -11,10 +11,19 @@ gui_headers = $(wildcard src/automaton641/gui/*.h) $(lib_headers)
 gui_dependencies = $(gui_sources) $(gui_headers)
 gui_executable = bin/gui
 
+
+lang_sources =  $(wildcard src/automaton641/lang/*.c) $(lib_sources)
+lang_headers = $(wildcard src/automaton641/lang/*.h) $(lib_headers)
+lang_dependencies = $(lang_sources) $(lang_headers)
+lang_executable = bin/lang
+
 linker_flags = `pkg-config --libs glew glfw3` -pthread
 includes = -Isrc
 
-main: execute_gui
+main: execute_lang
+
+execute_lang: $(lang_executable)
+	./$(lang_executable)
 
 execute_gui: $(gui_executable)
 	./$(gui_executable)
@@ -27,6 +36,9 @@ debug_test: $(test_executable)
 
 clean:
 	rm -r bin/*
+
+$(lang_executable): $(lang_dependencies)
+	gcc $(includes) $(lang_sources) -o $(lang_executable) $(linker_flags)
 
 $(test_executable): $(test_dependencies)
 	gcc $(includes) $(test_sources) -o $(test_executable) $(linker_flags)

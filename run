@@ -1,0 +1,7 @@
+#!/bin/bash
+echo 'Running'
+./update_cmake.py
+cd build
+pwd
+make
+./lang

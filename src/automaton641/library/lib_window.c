@@ -68,7 +68,7 @@ void error_callback(int error, const char* description)
 lib_window_t* lib_window_create(lib_window_attributes_t *attributes) {
     if (!glfwInit())
     {
-        exit_error("glfwInit");
+        lib_exit_error("glfwInit");
     }
     glfwSetErrorCallback(error_callback);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -84,7 +84,7 @@ lib_window_t* lib_window_create(lib_window_attributes_t *attributes) {
     window->inner = glfwCreateWindow(attributes->width, attributes->height, attributes->title, NULL, NULL);
     if (!window->inner)
     {
-        exit_error("glfwCreateWindow");
+        lib_exit_error("glfwCreateWindow");
     }
 
     window->should_draw = true;

@@ -1,7 +1,8 @@
 #pragma once
+struct lib_color;
+typedef struct lib_color lib_color_t;
 
-#include <automaton641/library/lib_types.h>
-
+#include <automaton641/library/lib_includes.h>
 
 struct lib_color {
     unsigned char red;

@@ -1,0 +1,20 @@
+{
+    "files.associations": {
+        "lib_application.h": "c",
+        "lib_window.h": "c",
+        "lib_widget.h": "c",
+        "lib_color.h": "c",
+        "lib_includes.h": "c",
+        "lib_automaton.h": "c",
+        "lib_character.h": "c",
+        "stdint.h": "c",
+        "stdio.h": "c",
+        "stdlib.h": "c",
+        "lib_general.h": "c",
+        "lib.h": "c",
+        "lib_lang.h": "c",
+        "lib_array.h": "c",
+        "lib_string.h": "c"
+    },
+    "C_Cpp.default.configurationProvider": "vector-of-bool.cmake-tools"
+}

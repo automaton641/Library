@@ -120,7 +120,7 @@ void test_iteration (lib_automaton_t *automaton) {
 void test_update_color (lib_color_t *color, lib_automaton_t *automaton, size_t x, size_t y) {
     //printf("%s\n", "test_update_color");
     if (color == NULL) {
-        exit_error("color == NULL");
+        lib_exit_error("color == NULL");
     }
     test_automaton_data_t *user_data = automaton->user_data;
     unsigned char red, green, blue;
@@ -139,19 +139,19 @@ void test_update_color (lib_color_t *color, lib_automaton_t *automaton, size_t x
 int main(int argc, char const *argv[]) {
     lib_application_t *application = lib_application_create();
     test_automaton_data_t automaton_data = {
-        .modulus = 4
+        .modulus = 360
     };
     lib_automaton_attributes_t automaton_attributes = {
         .element_size = sizeof(test_cell_t),
-        .width = 256,
-        .height = 128,
-        .iteration_time = 64,
+        .width = 1600,
+        .height = 900,
+        .iteration_time = 0,
         .iteration = test_iteration,
         .initialization = test_initialization,
         .user_data = &automaton_data
     };
     lib_automaton_display_t *display = lib_automaton_display_create(&automaton_attributes);
-    display->cell_size = 7;
+    display->cell_size = 1;
     display->update_color = test_update_color;
     lib_window_attributes_t window_attributes = {
         .title = "Test",

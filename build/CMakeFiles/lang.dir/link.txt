@@ -1,0 +1,1 @@
+/usr/bin/cc    CMakeFiles/lang.dir/src/automaton641/lang/main.c.o  -o lang libLibrary.a -lpthread -lGLEW -lGLU -lGL -lglfw 

@@ -1,12 +1,14 @@
 #pragma once
 
-#include <automaton641/library/lib_types.h>
-
 struct lib_window;
-typedef struct lib_window lib_window_t;
-
 struct lib_window_attributes;
 typedef struct lib_window_attributes lib_window_attributes_t;
+typedef struct lib_window lib_window_t;
+
+#include <automaton641/library/lib_includes.h>
+#include<automaton641/library/lib_widget.h>
+#include<automaton641/library/lib_color.h>
+
 
 struct lib_window_attributes {
     char *title;
@@ -15,7 +17,7 @@ struct lib_window_attributes {
     bool resizable;
 };
 
-struct lib_window_t {
+struct lib_window {
     lib_widget_t *widget;
     float *vertex_array;
     GLuint vbo;
