@@ -1,0 +1,1 @@
+/usr/bin/clang -O3 -DNDEBUG   CMakeFiles/test.dir/src/automaton641/test/main.c.o  -o test liblibrary.a -lpthread -lGLEW -lGLU -lGL -lglfw 

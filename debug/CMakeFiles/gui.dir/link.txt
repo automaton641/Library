@@ -1,0 +1,1 @@
+/usr/bin/clang -g   CMakeFiles/gui.dir/src/automaton641/gui/main.c.o  -o gui liblibrary.a -lpthread -lGLEW -lGLU -lGL -lglfw 

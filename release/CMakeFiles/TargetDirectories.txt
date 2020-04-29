@@ -1,0 +1,7 @@
+/home/automaton641/Library/release/CMakeFiles/rebuild_cache.dir
+/home/automaton641/Library/release/CMakeFiles/gui.dir
+/home/automaton641/Library/release/CMakeFiles/test.dir
+/home/automaton641/Library/release/CMakeFiles/edit_cache.dir
+/home/automaton641/Library/release/CMakeFiles/library.dir
+/home/automaton641/Library/release/CMakeFiles/lang.dir
+/home/automaton641/Library/release/CMakeFiles/game.dir

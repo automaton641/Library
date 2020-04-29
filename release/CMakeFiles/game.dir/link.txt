@@ -1,0 +1,1 @@
+/usr/bin/clang -O3 -DNDEBUG   CMakeFiles/game.dir/src/automaton641/game/main.c.o  -o game liblibrary.a -lpthread -lGLEW -lGLU -lGL -lglfw 

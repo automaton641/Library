@@ -24,6 +24,10 @@ void test_initialization(lib_automaton_t *automaton) {
     cell.level = 0;
     for (size_t y = 0; y < height; y++) {
         for (size_t x = 0; x < width; x++) {
+            if (bidimensional == NULL)
+            {
+                lib_exit_error("bidimensional is null");
+            }
             lib_bidimensional_set(bidimensional, &cell, x, y);
             lib_bidimensional_set(back_dimension, &cell, x, y);
             //cell.level++;

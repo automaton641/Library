@@ -41,27 +41,3 @@ target_link_libraries( gui GLEW )
 target_link_libraries( gui GLU )
 target_link_libraries( gui GL )
 target_link_libraries( gui glfw )
-
-add_executable( lang
-./src/automaton641/lang/main.c
-./src/automaton641/lang/lib.h
-./src/automaton641/lang/lib.c
-)
-target_include_directories( lang PRIVATE ./src/ )
-target_link_libraries( lang library )
-target_link_libraries( lang pthread )
-target_link_libraries( lang GLEW )
-target_link_libraries( lang GLU )
-target_link_libraries( lang GL )
-target_link_libraries( lang glfw )
-
-add_executable( test
-./src/automaton641/test/main.c
-)
-target_include_directories( test PRIVATE ./src/ )
-target_link_libraries( test library )
-target_link_libraries( test pthread )
-target_link_libraries( test GLEW )
-target_link_libraries( test GLU )
-target_link_libraries( test GL )
-target_link_libraries( test glfw )

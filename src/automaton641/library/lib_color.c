@@ -13,4 +13,5 @@ lib_color_t *lib_color_create(unsigned char red, unsigned char green, unsigned c
     color->green = green;
     color->blue = blue;
     color->alpha = alpha;
+    return color;
 }

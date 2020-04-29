@@ -1,6 +1,0 @@
-/home/automaton641/Library/out/CMakeFiles/rebuild_cache.dir
-/home/automaton641/Library/out/CMakeFiles/gui.dir
-/home/automaton641/Library/out/CMakeFiles/test.dir
-/home/automaton641/Library/out/CMakeFiles/lang.dir
-/home/automaton641/Library/out/CMakeFiles/library.dir
-/home/automaton641/Library/out/CMakeFiles/edit_cache.dir

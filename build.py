@@ -2,6 +2,7 @@
 import os
 import mmap
 import subprocess
+import sys
 
 
 unused = """
@@ -33,13 +34,12 @@ class Library:
     def __init__(self, name, dependecies = []):
         self.name = name
         self.dependecies = dependecies
-        self.sub_projects = []
         self.include_path = "./src/"
         self.source_directory = "./src/"
         self.tabs = 0
         self.sources = []
         self.linked_libraries = []
-        self.out_directory = "out/"
+        self.build_type = "debug"
         self.makecontent = """
 cmake_minimum_required(VERSION 3.13.4)
 project (TheProject)
@@ -72,17 +72,21 @@ project (TheProject)
             self.makecontent += ")\n"
             self.makecontent += "add_library(" + self.name + " ${" + self.name + "_sources} )\n"
             self.makecontent += "target_include_directories( " + self.name + " PRIVATE " + self.include_path + " )\n"
-            for sub_project in self.sub_projects:
-                self.makecontent += "\n"
-                sub_project_sources = find_sources(self.include_path + "automaton641/" + sub_project)
-                self.makecontent += "add_executable( " + sub_project + "\n"
-                for source in sub_project_sources:
-                    self.makecontent += source + "\n"
-                self.makecontent += ")\n"
-                self.makecontent += "target_include_directories( " + sub_project + " PRIVATE " + self.include_path + " )\n"
-                self.makecontent += "target_link_libraries( " + sub_project + " " + self.name + " )\n"
-                for linked_library in self.linked_libraries:
-                    self.makecontent += "target_link_libraries( " + sub_project + " " + linked_library + " )\n"
+            self.makecontent += "\n"
+            target_sources_directory = self.include_path + "automaton641/" + target
+            isdir = os.path.isdir(target_sources_directory) 
+            if not isdir:
+                print("[ERROR] target '" + target + "' not found...") 
+                sys.exit()
+            target_sources = find_sources(target_sources_directory)
+            self.makecontent += "add_executable( " + target + "\n"
+            for source in target_sources:
+                self.makecontent += source + "\n"
+            self.makecontent += ")\n"
+            self.makecontent += "target_include_directories( " + target + " PRIVATE " + self.include_path + " )\n"
+            self.makecontent += "target_link_libraries( " + target + " " + self.name + " )\n"
+            for linked_library in self.linked_libraries:
+                self.makecontent += "target_link_libraries( " + target + " " + linked_library + " )\n"
             filename = "CMakeLists.txt"
             # Open the file with writing permission
             myfile = open(filename, 'w')
@@ -91,18 +95,32 @@ project (TheProject)
             # Close the file
             myfile.close()
             #os.chdir("./build") 
-            os.chdir(self.out_directory)
-            print("building...")
+            os.chdir(self.build_type)
+            print("[" + self.build_type + "] " + "building...")
             subprocess.run(["make"])
-            print("...finished building")
-            print("running...")
+            print("[" + self.build_type + "] " + "...finished building")
+            print("[" + self.build_type + "] " + "running...")
             os.chdir("..")
-            subprocess.run([ "./" + self.out_directory + target ])
-            print("...finished running")
+            subprocess.run([ "./" + self.build_type + "/" + target ])
+            print("[" + self.build_type + "] " + "...finished running")
 
+argc = len(sys.argv)
+argv = sys.argv
+print('Number of arguments:' + str() + 'arguments.\n')
+print('Argument List:' + str(argv)+"\n")
+
+build_types = ["debug", "release"]
 library = Library("library")
 library.source_directory += "automaton641/library/"
-library.sub_projects = ["gui", "lang", "test"]
 library.linked_libraries = ["pthread", "GLEW", "GLU", "GL", "glfw"]
 library.find_sources()
-library.run("gui")
+target = "game"
+if argc > 1:
+    target = argv[1]
+    if argc > 2:
+        library.build_type = argv[2]
+        if not library.build_type in build_types:
+            print("invalid build type")
+            sys.exit()
+
+library.run(target)
