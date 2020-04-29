@@ -124,7 +124,7 @@ lib_window_t* lib_window_create(lib_window_attributes_t *attributes) {
     //printf("%s: %i\n", "window->frame_height/2", window->frame_height/2);
     //printf("%s: %i\n", "y", y);
     glfwSetWindowPos(window->inner, x, y);
-    window->color = lib_color_create(0, 255, 0, 255);
+    window->color = lib_color_create(0, 0, 255, 255);
     create_pixels(window);
     window->widget = NULL;
     return window;
