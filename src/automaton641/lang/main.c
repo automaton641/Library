@@ -1,7 +1,8 @@
 #include <automaton641/library/lib.h>
+#include <automaton641/lang/lib.h>
 
 int main(int argc, char const *argv[])
 {
-    lib_lang_run("./main.lang");
+    run();
     return 0;
 }

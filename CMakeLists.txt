@@ -1,8 +1,7 @@
- 
+
 cmake_minimum_required(VERSION 3.13.4)
 project (TheProject)
-
-set(LIBRARY_SOURCES
+set( library_sources
 ./src/automaton641/library/lib_character.h
 ./src/automaton641/library/lib_automaton_display.c
 ./src/automaton641/library/lib_color.c
@@ -28,17 +27,41 @@ set(LIBRARY_SOURCES
 ./src/automaton641/library/lib_application.h
 ./src/automaton641/library/lib_automaton_display.h
 ./src/automaton641/library/lib_string.h
-
 )
-add_library( Library ${LIBRARY_SOURCES} )
-target_include_directories(Library PRIVATE src)
+add_library(library ${library_sources} )
+target_include_directories( library PRIVATE ./src/ )
 
-#add_library(lang_lib libsrc1.cc libsrc2.cc libsrc3.cc)
-add_executable(lang src/automaton641/lang/main.c )
-target_link_libraries(lang Library )
-target_include_directories(lang PRIVATE src)
-target_link_libraries(lang pthread)
-target_link_libraries(lang GLEW)
-target_link_libraries(lang GLU)
-target_link_libraries(lang GL)
-target_link_libraries(lang glfw)
+add_executable( gui
+./src/automaton641/gui/main.c
+)
+target_include_directories( gui PRIVATE ./src/ )
+target_link_libraries( gui library )
+target_link_libraries( gui pthread )
+target_link_libraries( gui GLEW )
+target_link_libraries( gui GLU )
+target_link_libraries( gui GL )
+target_link_libraries( gui glfw )
+
+add_executable( lang
+./src/automaton641/lang/main.c
+./src/automaton641/lang/lib.h
+./src/automaton641/lang/lib.c
+)
+target_include_directories( lang PRIVATE ./src/ )
+target_link_libraries( lang library )
+target_link_libraries( lang pthread )
+target_link_libraries( lang GLEW )
+target_link_libraries( lang GLU )
+target_link_libraries( lang GL )
+target_link_libraries( lang glfw )
+
+add_executable( test
+./src/automaton641/test/main.c
+)
+target_include_directories( test PRIVATE ./src/ )
+target_link_libraries( test library )
+target_link_libraries( test pthread )
+target_link_libraries( test GLEW )
+target_link_libraries( test GLU )
+target_link_libraries( test GL )
+target_link_libraries( test glfw )

@@ -1,9 +1,0 @@
-( structure pair bit a bit b )
-( function negate bit b ( if b ( return 0 ) ( return 1 ) ) )
-( declare bit b )
-( put b 1 )
-( declare string salute )
-( put salute "hello" )
-( print_line ( negate b ) )
-( print_line salute )
-
