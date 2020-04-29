@@ -14,7 +14,8 @@
         "lib.h": "c",
         "lib_lang.h": "c",
         "lib_array.h": "c",
-        "lib_string.h": "c"
+        "lib_string.h": "c",
+        "lib_container.h": "c"
     },
     "C_Cpp.default.configurationProvider": "vector-of-bool.cmake-tools"
 }

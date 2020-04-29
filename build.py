@@ -66,6 +66,18 @@ project (TheProject)
             if file.endswith(".c") or file.endswith(".h"):
                 self.sources.append(os.path.join(self.source_directory, file))
     def run(self, target):
+            build_directory = self.build_type
+            isdir = os.path.isdir(build_directory) 
+            if not isdir:
+                print("[info] build directory'" + build_directory + "' not found...") 
+                subprocess.run(["mkdir", build_directory])
+                os.chdir(build_directory)
+                if build_directory == "debug":
+                    subprocess.run(["cmake", "-DCMAKE_BUILD_TYPE=Debug", ".."])
+                else:
+                    subprocess.run(["cmake", "-DCMAKE_BUILD_TYPE=Release", ".."])
+                subprocess.run(["make"])
+                os.chdir("..")
             self.makecontent += "set( " + self.name +"_sources\n"
             for source in self.sources:
                 self.makecontent += source + "\n"
@@ -88,13 +100,9 @@ project (TheProject)
             for linked_library in self.linked_libraries:
                 self.makecontent += "target_link_libraries( " + target + " " + linked_library + " )\n"
             filename = "CMakeLists.txt"
-            # Open the file with writing permission
             myfile = open(filename, 'w')
-            # Write a line to the file
             myfile.write(self.makecontent)
-            # Close the file
             myfile.close()
-            #os.chdir("./build") 
             os.chdir(self.build_type)
             print("[" + self.build_type + "] " + "building...")
             subprocess.run(["make"])
@@ -106,9 +114,6 @@ project (TheProject)
 
 argc = len(sys.argv)
 argv = sys.argv
-print('Number of arguments:' + str() + 'arguments.\n')
-print('Argument List:' + str(argv)+"\n")
-
 build_types = ["debug", "release"]
 library = Library("library")
 library.source_directory += "automaton641/library/"
@@ -117,10 +122,16 @@ library.find_sources()
 target = "game"
 if argc > 1:
     target = argv[1]
+    if target == "clean":
+        print("[clean] cleaning...")
+        for build_directory in build_types:
+            subprocess.run(["rm","-r",build_directory])
+        sys.exit()
     if argc > 2:
         library.build_type = argv[2]
         if not library.build_type in build_types:
             print("invalid build type")
             sys.exit()
+
 
 library.run(target)

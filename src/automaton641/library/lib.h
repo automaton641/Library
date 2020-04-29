@@ -10,6 +10,7 @@
 #include <automaton641/library/lib_character.h>
 #include <automaton641/library/lib_lang.h>
 #include <automaton641/library/lib_general.h>
+#include <automaton641/library/lib_container.h>
 
 
 #include <automaton641/library/lib_includes.h>

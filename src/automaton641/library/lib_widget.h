@@ -14,5 +14,10 @@ lib_widget_t *lib_widget_create(void *specialization, lib_widget_initialization 
 struct lib_widget {
     lib_widget_initialization initialization;
     lib_widget_draw draw;
+    double padding;
+    double border;
+    double margin;
+    double proportion;
+    double grow_ratio;
     void *specialization;
 };
